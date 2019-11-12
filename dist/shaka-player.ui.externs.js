@@ -11,6 +11,8 @@ window.shaka = {};
 /** @const */
 shaka.abr = {};
 /** @const */
+shaka.ads = {};
+/** @const */
 shaka.cast = {};
 /** @const */
 shaka.dash = {};
@@ -272,7 +274,8 @@ shaka.util.Error.Category = {
   'DRM': 6,
   'PLAYER': 7,
   'CAST': 8,
-  'STORAGE': 9
+  'STORAGE': 9,
+  'ADS': 10
 };
 /**
  * @enum {number}
@@ -385,7 +388,9 @@ shaka.util.Error.Code = {
   'LOCAL_PLAYER_INSTANCE_REQUIRED': 9008,
   'NEW_KEY_OPERATION_NOT_SUPPORTED': 9011,
   'KEY_NOT_FOUND': 9012,
-  'MISSING_STORAGE_CELL': 9013
+  'MISSING_STORAGE_CELL': 9013,
+  'IMA_SDK_MISSING': 10000,
+  'CS_AD_MANAGER_NOT_INITIALIZED': 10001
 };
 /**
  * A utility to wrap abortable operations.  Note that these are not cancelable.
@@ -494,22 +499,26 @@ shaka.util.BufferUtils = class {
    */
   static toArrayBuffer(view) {}
   /**
+   * Creates a new Uint8Array view on the same buffer.  This clamps the values
+   * to be within the same view (i.e. you can't use this to move past the end
+   * of the view, even if the underlying buffer is larger).  However, you can
+   * pass a negative offset to access the data before the view.
+   * @param {BufferSource} data
+   * @param {number=} offset The offset from the beginning of this data's view
+   *   to start the new view at.
+   * @param {number=} length The byte length of the new view.
+   * @return {!Uint8Array}
+   */
+  static toUint8(data,offset,length) {}
+  /**
    * Creates a DataView over the given buffer.
+   * @see toUint8
    * @param {BufferSource} buffer
    * @param {number=} offset
    * @param {number=} length
    * @return {!DataView}
    */
   static toDataView(buffer,offset,length) {}
-  /**
-   * Creates a new Uint8Array view on the same buffer.
-   * @param {BufferSource} data
-   * @param {number=} offset The offset from the beginning of this data's view
-   *   to start the new view at.
-   * @param {number=} length The length of the new view.
-   * @return {!Uint8Array}
-   */
-  static toUint8(data,offset,length) {}
 };
 /**
  * An interface to standardize how objects are destroyed.
@@ -1149,6 +1158,113 @@ shaka.abr.SimpleAbrManager = class {
   configure(config) {}
 };
 /**
+ * @implements {shaka.extern.IAd}
+ */
+shaka.ads.ClientSideAd = class {
+  /**
+   * @param {!google.ima.Ad} imaAd
+   * @param {!google.ima.AdsManager} imaAdManager
+   */
+  constructor(imaAd,imaAdManager) {}
+  /**
+   * @override
+   */
+  getDuration() {}
+  /**
+   * @override
+   */
+  getRemainingTime() {}
+  /**
+   * @override
+   */
+  isPaused() {}
+  /**
+   * @override
+   */
+  pause() {}
+  /**
+   * @override
+   */
+  play() {}
+  /**
+   * @override
+   */
+  getVolume() {}
+  /**
+   * @override
+   */
+  setVolume(volume) {}
+  /**
+   * @override
+   */
+  isMuted() {}
+  /**
+   * @override
+   */
+  resize(width,height) {}
+  /**
+   * @override
+   */
+  setMuted(muted) {}
+  /**
+   * @override
+   */
+  release() {}
+};
+/**
+ * A class responsible for ad-related interactions.
+ */
+shaka.ads.AdManager = class extends shaka.util.FakeEventTarget {
+  constructor() {}
+  /**
+   * @param {!HTMLElement} adContainer
+   * @param {!HTMLMediaElement} video
+   */
+  initClientSide(adContainer,video) {}
+  /**
+   * @param {!google.ima.AdsRequest} imaRequest
+   */
+  requestClientSideAds(imaRequest) {}
+  /**
+   * @param {string} assetKey
+   * @param {string} assetId
+   * @param {boolean} isLive
+   * @param {string=} backupUrl
+   */
+  loadServerSideStream(assetKey,assetId,isLive,backupUrl) {}
+};
+/**
+ * The event name for when an ad has started playing.
+ * @const {string}
+ */
+shaka.ads.AdManager.AD_STARTED;
+/**
+ * The event name for when an ad has finished playing
+ * (played all the way through or was skipped).
+ * @const {string}
+ */
+shaka.ads.AdManager.AD_STOPPED;
+/**
+ * The event name for when the ad volume has changed.
+ * @const {string}
+ */
+shaka.ads.AdManager.AD_VOLUME_CHANGED;
+/**
+ * The event name for when the ad was muted.
+ * @const {string}
+ */
+shaka.ads.AdManager.AD_MUTED;
+/**
+ * The event name for when the ad was paused.
+ * @const {string}
+ */
+shaka.ads.AdManager.AD_PAUSED;
+/**
+ * The event name for when the ad was resumed after a pause.
+ * @const {string}
+ */
+shaka.ads.AdManager.AD_RESUMED;
+/**
  * @summary A proxy to switch between local and remote playback for Chromecast
  * in a way that is transparent to the app's controls.
  * @implements {shaka.util.IDestroyable}
@@ -1429,11 +1545,6 @@ shaka.media.InitSegmentReference = class {
    */
   constructor(uris,startByte,endByte) {}
   /**
-   * Creates the URIs of the resource containing the segment.
-   * @return {!Array.<string>}
-   */
-  createUris() {}
-  /**
    * Returns the offset from the start of the resource to the
    * start of the segment.
    * @return {number}
@@ -1500,11 +1611,6 @@ shaka.media.SegmentReference = class {
    * @return {number}
    */
   getEndTime() {}
-  /**
-   * Creates the URIs of the resource containing the segment.
-   * @return {!Array.<string>}
-   */
-  createUris() {}
   /**
    * Returns the offset from the start of the resource to the
    * start of the segment.
@@ -1835,6 +1941,15 @@ shaka.hls.HlsParser = class {
  */
 shaka.net.HttpFetchPlugin = class {
   /**
+   * @param {string} uri
+   * @param {shaka.extern.Request} request
+   * @param {shaka.net.NetworkingEngine.RequestType} requestType
+   * @param {shaka.extern.ProgressUpdated} progressUpdated Called when a
+   *   progress event happened.
+   * @return {!shaka.extern.IAbortableOperation.<shaka.extern.Response>}
+   */
+  static parse(uri,request,requestType,progressUpdated) {}
+  /**
    * Determine if the Fetch API is supported in the browser. Note: this is
    * deliberately exposed as a method to allow the client app to use the same
    * logic as Shaka when determining support.
@@ -2117,6 +2232,12 @@ shaka.Player = class extends shaka.util.FakeEventTarget {
    */
   getManifestUri() {}
   /**
+    * Returns a shaka.ads.AdManager instance, responsible for Dynamic
+    * Ad Insertion functionality.
+    * @return {shaka.ads.AdManager}
+    */
+  getAdManager() {}
+  /**
    * Get if the player is playing live content. If the player has not loaded
    * content, this will return <code>false</code>.
    * @return {boolean}
@@ -2310,6 +2431,13 @@ shaka.Player = class extends shaka.util.FakeEventTarget {
    * @param {string=} role
    */
   selectTextLanguage(language,role) {}
+  /**
+   * Select variant tracks that have a given label. This assumes the
+   * label uniquely identifies an audio stream, so all the variants
+   * are expected to have the same variant.audio.
+   * @param {string} label
+   */
+  selectVariantsByLabel(label) {}
   /**
    * Check if the text displayer is enabled.
    * @return {boolean}
@@ -2545,15 +2673,6 @@ shaka.util.Dom = class {
   static removeAllChildren(element) {}
 };
 /**
- * A class responsible for ad-related interactions.
- */
-shaka.ui.AdManager = class {
-  /**
-   * @param {!shaka.ui.Controls} controls
-   */
-  constructor(controls) {}
-};
-/**
  * @implements {shaka.extern.IUIElement}
  * @abstract
  */
@@ -2592,6 +2711,25 @@ shaka.ui.Element.prototype.player;
      * @protected {HTMLMediaElement}
      */
 shaka.ui.Element.prototype.video;
+/**
+     * @protected {shaka.ads.AdManager}
+     */
+shaka.ui.Element.prototype.adManager;
+/**
+     * @protected {shaka.extern.IAd}
+     */
+shaka.ui.Element.prototype.ad;
+/**
+ * @extends {shaka.ui.Element}
+ * @final
+ */
+shaka.ui.AdCounter = class extends shaka.ui.Element {
+  /**
+   * @param {!HTMLElement} parent
+   * @param {!shaka.ui.Controls} controls
+   */
+  constructor(parent,controls) {}
+};
 /**
  * A range element, built to work across browsers.
  * In particular, getting styles to work right on IE requires a specific
@@ -2998,10 +3136,6 @@ shaka.ui.Overlay = class {
    * @return {!shaka.extern.UIConfiguration}
    */
   getConfiguration() {}
-  /**
-   * @return {shaka.ui.AdManager}
-   */
-  getAdManager() {}
   /**
    * @param {string|!Object} config This should either be a field name or an
    *   object following the form of {@link shaka.extern.UIConfiguration}, where
