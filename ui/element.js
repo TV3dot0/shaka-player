@@ -67,6 +67,28 @@ shaka.ui.Element = class {
      * @exportInterface
      */
     this.video = this.controls.getVideo();
+
+    /**
+     * @protected {shaka.ads.AdManager}
+     * @exportInterface
+     */
+    this.adManager = this.player.getAdManager();
+
+    /**
+     * @protected {shaka.extern.IAd}
+     * @exportInterface
+     */
+    this.ad = null;
+
+    const AD_STARTED = shaka.ads.AdManager.AD_STARTED;
+    this.eventManager.listen(this.adManager, AD_STARTED, (e) => {
+      this.ad = (/** @type {!Object} */ (e))['ad'];
+    });
+
+    const AD_STOPPED = shaka.ads.AdManager.AD_STOPPED;
+    this.eventManager.listen(this.adManager, AD_STOPPED, () => {
+      this.ad = null;
+    });
   }
 
   /**
@@ -82,5 +104,7 @@ shaka.ui.Element = class {
     this.localization = null;
     this.player = null;
     this.video = null;
+    this.adManager = null;
+    this.ad = null;
   }
 };

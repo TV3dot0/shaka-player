@@ -64,6 +64,29 @@ google.ima.AdsManager = class {
    */
   init(width, height, viewMode) {}
 
+  /**
+   * @return {number}
+   */
+  getRemainingTime() {}
+
+  pause() {}
+
+  resume() {}
+
+  getVolume() {}
+
+  /**
+   * @param {number} volume
+   */
+  setVolume(volume) {}
+
+  /**
+   * @param {number} width
+   * @param {number} height
+   * @param {google.ima.ViewMode} viewMode
+   */
+  resize(width, height, viewMode) {}
+
   /** @override */
   addEventListener() {}
 
@@ -106,7 +129,17 @@ google.ima.AdsManagerLoadedEvent.Type = {
 
 
 /** @const */
-google.ima.AdEvent = {};
+google.ima.AdEvent = class extends Event {
+  /** @return {!google.ima.Ad } */
+  getAd() {}
+};
+
+
+/** @const */
+google.ima.Ad = class {
+  /** @return {number} */
+  getDuration() {}
+};
 
 
 /**
@@ -116,6 +149,10 @@ google.ima.AdEvent.Type = {
   CONTENT_PAUSE_REQUESTED: 'CONTENT_PAUSE_REQUESTED',
   CONTENT_RESUME_REQUESTED: 'CONTENT_RESUME_REQUESTED',
   AD_ERROR: 'AD_ERROR',
+  PAUSED: 'PAUSED',
+  RESUMED: 'RESUMED',
+  VOLUME_CHANGED: 'VOLUME_CHANGED',
+  VOLUME_MUTED: 'VOLUME_MUTED',
 };
 
 

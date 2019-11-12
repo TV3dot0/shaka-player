@@ -497,7 +497,8 @@ shaka.extern.AdvancedDrmConfiguration;
  *   clearKeys: !Object.<string, string>,
  *   delayLicenseRequestUntilPlayed: boolean,
  *   advanced: Object.<string, shaka.extern.AdvancedDrmConfiguration>,
- *   initDataTransform: ((function(!Uint8Array):!Uint8Array)|undefined)
+ *   initDataTransform:
+ *       ((function(!Uint8Array, ?shaka.extern.DrmInfo):!Uint8Array)|undefined)
  * }}
  *
  * @property {shaka.extern.RetryParameters} retryParameters
@@ -518,7 +519,8 @@ shaka.extern.AdvancedDrmConfiguration;
  *   <i>Optional.</i> <br>
  *   A dictionary which maps key system IDs to advanced DRM configuration for
  *   those key systems.
- * @property {((function(!Uint8Array):!Uint8Array)|undefined)}
+ * @property
+ *     {((function(!Uint8Array, ?shaka.extern.DrmInfo):!Uint8Array)|undefined)}
  *   initDataTransform
  *   <i>Optional.</i><br>
  *   If given, this function is called with the init data from the
@@ -601,6 +603,7 @@ shaka.extern.HlsManifestConfiguration;
  * @typedef {{
  *   retryParameters: shaka.extern.RetryParameters,
  *   availabilityWindowOverride: number,
+ *   disableAudio: boolean,
  *   dash: shaka.extern.DashManifestConfiguration,
  *   hls: shaka.extern.HlsManifestConfiguration
  * }}
@@ -612,6 +615,9 @@ shaka.extern.HlsManifestConfiguration;
  *   manifest, or <code>NaN</code> if the default value should be used.  This is
  *   enforced by the manifest parser, so custom manifest parsers should take
  *   care to honor this parameter.
+ * @property {boolean} disableAudio
+ *   If <code>true</code>, the audio tracks are ignored.
+ *   Defaults to <code>false</code>.
  * @property {shaka.extern.DashManifestConfiguration} dash
  *   Advanced parameters used by the DASH manifest parser.
  * @property {shaka.extern.HlsManifestConfiguration} hls

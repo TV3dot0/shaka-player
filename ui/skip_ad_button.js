@@ -39,6 +39,8 @@ shaka.ui.SkipAdButton = class extends shaka.ui.Element {
     /** @private {!HTMLElement} */
     this.button_ = shaka.util.Dom.createHTMLElement('button');
     this.button_.classList.add('shaka-skip-ad-button');
+    this.button_.classList.add('shaka-no-propagation');
+    this.button_.textContent = 'Skip Ad'; // TODO: localize
     this.parent.appendChild(this.button_);
     this.updateAriaLabel_();
 
@@ -61,17 +63,3 @@ shaka.ui.SkipAdButton = class extends shaka.ui.Element {
   }
 };
 
-
-/**
- * @implements {shaka.extern.IUIElement.Factory}
- * @final
- */
-shaka.ui.SkipAdButton.Factory = class {
-  /** @override */
-  create(rootElement, controls) {
-    return new shaka.ui.SkipAdButton(rootElement, controls);
-  }
-};
-
-shaka.ui.Controls.registerElement('skip_ad',
-    new shaka.ui.SkipAdButton.Factory());

@@ -79,6 +79,12 @@ shaka.ui.Controls = class extends shaka.util.FakeEventTarget {
     /** @private {!HTMLElement} */
     this.videoContainer_ = videoContainer;
 
+    /** @private {shaka.ads.AdManager} */
+    this.adManager_ = this.player_.getAdManager();
+
+    /** @private {shaka.extern.IAd} */
+    this.ad_ = null;
+
     /** @private {shaka.ui.SeekBar} */
     this.seekBar_ = null;
 
@@ -87,6 +93,9 @@ shaka.ui.Controls = class extends shaka.util.FakeEventTarget {
 
     /** @private {!Array.<!Element>} */
     this.settingsMenus_ = [];
+
+    /** @private {!Array.<!Element>} */
+    this.fadeOutControls_ = [];
 
     /**
      * This timer is used to detect when the user has stopped moving the mouse
@@ -598,7 +607,7 @@ shaka.ui.Controls = class extends shaka.util.FakeEventTarget {
   /** @export */
   async toggleFullScreen() {
     if (document.fullscreenElement) {
-      document.exitFullscreen();
+      await document.exitFullscreen();
     } else {
       // If we are in PiP mode, leave PiP mode first.
       try {
@@ -616,18 +625,68 @@ shaka.ui.Controls = class extends shaka.util.FakeEventTarget {
 
   /** @export */
   showAdUI() {
-    // TODO
+    // TODO: other ad states (seek bar display etc)
+    shaka.ui.Utils.setDisplay(this.adPanel_, true);
   }
 
   /** @export */
   hideAdUI() {
-    // TODO
+    // TODO: other ad states (seek bar display etc)
+    shaka.ui.Utils.setDisplay(this.adPanel_, false);
   }
+
+  /**
+   * Play or pause the current presentation.
+   */
+  playPausePresentation() {
+    if (!this.enabled_) {
+      return;
+    }
+
+    if (!this.video_.duration) {
+      // Can't play yet.  Ignore.
+      return;
+    }
+
+    this.player_.cancelTrickPlay();
+
+    if (this.presentationIsPaused()) {
+      this.video_.play();
+    } else {
+      this.video_.pause();
+    }
+  }
+
+  /**
+   * Play or pause the current ad.
+   */
+  playPauseAd() {
+    if (this.ad_ && this.ad_.isPaused()) {
+      this.ad_.play();
+    } else if (this.ad_) {
+      this.ad_.pause();
+    }
+  }
+
+
+  /**
+   * Return true if the presentation is paused.
+   *
+   * @return {boolean}
+   */
+  presentationIsPaused() {
+    // The video element is in a paused state while seeking, but we don't count
+    // that.
+    return this.video_.paused && !this.isSeeking();
+  }
+
 
   /** @private */
   createDOM_() {
     this.videoContainer_.classList.add('shaka-video-container');
     this.video_.classList.add('shaka-video');
+
+    this.addSkimContainer_();
 
     if (this.config_.addBigPlayButton) {
       this.addPlayButton_();
@@ -655,6 +714,10 @@ shaka.ui.Controls = class extends shaka.util.FakeEventTarget {
         menu.classList.add('shaka-low-position');
       }
     }
+
+    this.fadeOutControls_ = Array.from(
+        this.videoContainer_.getElementsByClassName(
+            'shaka-fade-out-on-mouse-out'));
   }
 
   /** @private */
@@ -685,13 +748,41 @@ shaka.ui.Controls = class extends shaka.util.FakeEventTarget {
     this.elements_.push(this.playButton_);
   }
 
+  /** @private */
+  addSkimContainer_() {
+    // This is the container that gets styled by CSS to have the
+    // black gradient skim at the end of the controls.
+    const skimContainer = shaka.util.Dom.createHTMLElement('div');
+    skimContainer.classList.add('shaka-skim-container');
+    skimContainer.classList.add('shaka-fade-out-on-mouse-out');
+    this.controlsContainer_.appendChild(skimContainer);
+  }
 
   /** @private */
   addAdContainer_() {
+    // Ad container. IMA will use this div to display client-side ads.
     /** @private {!HTMLElement} */
     this.adContainer_ = shaka.util.Dom.createHTMLElement('div');
     this.adContainer_.classList.add('shaka-ad-container');
     this.videoContainer_.appendChild(this.adContainer_);
+  }
+
+  /** @private */
+  addAdControls_() {
+    /** @private {!HTMLElement} */
+    this.adPanel_ = shaka.util.Dom.createHTMLElement('div');
+    this.adPanel_.classList.add('shaka-ad-controls');
+    shaka.ui.Utils.setDisplay(this.adPanel_, false);
+    this.bottomControls_.appendChild(this.adPanel_);
+
+    const adCounter = new shaka.ui.AdCounter(this.adPanel_, this);
+    this.elements_.push(adCounter);
+
+    const spacer = new shaka.ui.Spacer(this.adPanel_, this);
+    this.elements_.push(spacer);
+
+    const skipButton = new shaka.ui.SkipAdButton(this.adPanel_, this);
+    this.elements_.push(skipButton);
   }
 
   /** @private */
@@ -735,23 +826,26 @@ shaka.ui.Controls = class extends shaka.util.FakeEventTarget {
     /** @private {!HTMLElement} */
     this.bottomControls_ = shaka.util.Dom.createHTMLElement('div');
     this.bottomControls_.classList.add('shaka-bottom-controls');
+    this.bottomControls_.classList.add('shaka-no-propagation');
     this.controlsContainer_.appendChild(this.bottomControls_);
+
+    // Overflow menus are supposed to hide once you click elsewhere
+    // on the video element. The code in onContainerClick_ ensures that.
+    // However, clicks on the bottom controls don't propagate to the container,
+    // so we have to explicitly hide the menus onclick here.
+    this.eventManager_.listen(this.bottomControls_, 'click', () => {
+      this.hideSettingsMenus();
+    });
+
+    this.addAdControls_();
 
     /** @private {!HTMLElement} */
     this.controlsButtonPanel_ = shaka.util.Dom.createHTMLElement('div');
     this.controlsButtonPanel_.classList.add('shaka-controls-button-panel');
-    this.controlsButtonPanel_.classList.add('shaka-no-propagation');
+    this.controlsButtonPanel_.classList.add('shaka-fade-out-on-mouse-out');
     this.controlsButtonPanel_.classList.add(
         'shaka-show-controls-on-mouse-over');
     this.bottomControls_.appendChild(this.controlsButtonPanel_);
-
-    // Overflow menus are supposed to hide once you click elsewhere
-    // on the video element. The code in onContainerClick_ ensures that.
-    // However, clicks on controls panel don't propagate to the container,
-    // so we have to explicitly hide the menus onclick here.
-    this.eventManager_.listen(this.controlsButtonPanel_, 'click', () => {
-      this.hideSettingsMenus();
-    });
 
     // Create the elements specified by controlPanelElements
     for (const name of this.config_.controlPanelElements) {
@@ -825,11 +919,29 @@ shaka.ui.Controls = class extends shaka.util.FakeEventTarget {
       this.onKeyUp_(e);
     });
 
+    this.eventManager_.listen(
+        this.adManager_, shaka.ads.AdManager.AD_STARTED, (e) => {
+          this.ad_ = (/** @type {!Object} */ (e))['ad'];
+          this.showAdUI();
+        });
+
+    this.eventManager_.listen(
+        this.adManager_, shaka.ads.AdManager.AD_STOPPED, () => {
+          this.ad_ = null;
+          this.hideAdUI();
+        });
+
     if (screen.orientation) {
-      this.eventManager_.listen(screen.orientation, 'change', () => {
-        this.onScreenRotation_();
+      this.eventManager_.listen(screen.orientation, 'change', async () => {
+        await this.onScreenRotation_();
       });
     }
+
+    this.eventManager_.listen(document, 'fullscreenchange', () => {
+      if (this.ad_) {
+        this.ad_.resize(this.video_.offsetWidth, this.video_.offsetHeight);
+      }
+    });
   }
 
 
@@ -839,17 +951,17 @@ shaka.ui.Controls = class extends shaka.util.FakeEventTarget {
    * Similarly, exit fullscreen when the device is rotated to portrait layout.
    * @private
    */
-  onScreenRotation_() {
+  async onScreenRotation_() {
     if (!this.video_ ||
         this.video_.readyState == 0 ||
         this.castProxy_.isCasting()) { return; }
 
     if (screen.orientation.type.includes('landscape') &&
         !document.fullscreenElement) {
-      this.videoContainer_.requestFullscreen();
+      await this.videoContainer_.requestFullscreen();
     } else if (screen.orientation.type.includes('portrait') &&
         document.fullscreenElement) {
-      document.exitFullscreen();
+      await document.exitFullscreen();
     }
   }
 
@@ -938,10 +1050,13 @@ shaka.ui.Controls = class extends shaka.util.FakeEventTarget {
     // Hide the cursor.  (NOTE: not supported on IE)
     this.videoContainer_.style.cursor = 'none';
 
-    // Keep showing the controls if video is paused or one of the control menus
-    // is hovered.
-    if ((this.video_.paused && !this.isSeeking_) ||
-         this.overrideCssShowControls_) {
+    const adIsPaused = this.ad_ ? this.ad_.isPaused() : false;
+    const videoIsPaused = this.video_.paused && !this.isSeeking_;
+
+    // Keep showing the controls if ad or video is paused or one of
+    // the control menus is hovered.
+    if (adIsPaused ||
+       (!this.ad_ && videoIsPaused) || this.overrideCssShowControls_) {
       this.setControlsOpacity_(shaka.ui.Enums.Opacity.OPAQUE);
     } else {
       this.setControlsOpacity_(shaka.ui.Enums.Opacity.TRANSPARENT);
@@ -985,21 +1100,10 @@ shaka.ui.Controls = class extends shaka.util.FakeEventTarget {
 
   /** @private */
   onPlayPauseClick_() {
-    if (!this.enabled_) {
-      return;
-    }
-
-    if (!this.video_.duration) {
-      // Can't play yet.  Ignore.
-      return;
-    }
-
-    this.player_.cancelTrickPlay();
-
-    if (this.video_.paused) {
-      this.video_.play();
+    if (this.ad_) {
+      this.playPauseAd();
     } else {
-      this.video_.pause();
+      this.playPausePresentation();
     }
   }
 
@@ -1110,7 +1214,7 @@ shaka.ui.Controls = class extends shaka.util.FakeEventTarget {
       return true;
     }
 
-    return this.controlsContainer_.getAttribute('shown') != null;
+    return this.fadeOutControls_.some((c) => c.getAttribute('shown') != null);
   }
 
   /**
@@ -1255,10 +1359,15 @@ shaka.ui.Controls = class extends shaka.util.FakeEventTarget {
    * @private
    */
   setControlsOpacity_(opacity) {
-    if (opacity == shaka.ui.Enums.Opacity.OPAQUE) {
-      this.controlsContainer_.setAttribute('shown', 'true');
-    } else {
-      this.controlsContainer_.removeAttribute('shown');
+    for (const el of this.fadeOutControls_) {
+      if (opacity == shaka.ui.Enums.Opacity.OPAQUE) {
+        el.setAttribute('shown', 'true');
+      } else {
+        el.removeAttribute('shown');
+      }
+    }
+
+    if (opacity == shaka.ui.Enums.Opacity.TRANSPARENT) {
       // If there's an overflow menu open, keep it this way for a couple of
       // seconds in case a user immediately initiates another mouse move to
       // interact with the menus. If that didn't happen, go ahead and hide

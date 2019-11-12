@@ -85,11 +85,13 @@ describe('TtmlTextParser', () => {
         {periodStart: 0, segmentStart: 0, segmentEnd: 0});
     // Any other value is rejected as an error.
     errorHelper(shaka.util.Error.Code.INVALID_XML,
-        '<tt xml:space="invalid">' + ttBody + '</tt>');
+        '<tt xml:space="invalid">' + ttBody + '</tt>',
+        jasmine.any(String));
   });
 
   it('rejects invalid ttml', () => {
-    errorHelper(shaka.util.Error.Code.INVALID_XML, '<test></test>');
+    const anyString = jasmine.any(String);
+    errorHelper(shaka.util.Error.Code.INVALID_XML, '<test></test>', anyString);
   });
 
   it('rejects invalid time format', () => {
@@ -541,6 +543,34 @@ describe('TtmlTextParser', () => {
         {periodStart: 0, segmentStart: 0, segmentEnd: 0});
   });
 
+  it('supports percentages containing decimals', () => {
+    verifyHelper(
+        [
+          {
+            startTime: 62.05,
+            endTime: 3723.2,
+            payload: 'Test',
+            region: {
+              id: 'subtitleArea',
+              viewportAnchorX: 12.2,
+              viewportAnchorY: 50.005,
+              width: 100,
+              height: 100,
+            },
+          },
+        ],
+        '<tt xmlns:tts="http://www.w3.org/ns/ttml#styling">' +
+        '<layout>' +
+        '<region xml:id="subtitleArea" tts:origin="12.2% 50.005%" ' +
+        'tts:writingMode="tb" />' +
+        '</layout>' +
+        '<body region="subtitleArea">' +
+        '<p begin="01:02.05" end="01:02:03.200">Test</p>' +
+        '</body>' +
+        '</tt>',
+        {periodStart: 0, segmentStart: 0, segmentEnd: 0});
+  });
+
   it('supports writingMode setting', () => {
     verifyHelper(
         [
@@ -926,11 +956,20 @@ describe('TtmlTextParser', () => {
   /**
    * @param {shaka.util.Error.Code} code
    * @param {string} text
+   * @param {*=} errorData
    */
-  function errorHelper(code, text) {
-    const error = shaka.test.Util.jasmineError(new shaka.util.Error(
-        shaka.util.Error.Severity.CRITICAL, shaka.util.Error.Category.TEXT,
-        code));
+  function errorHelper(code, text, errorData = undefined) {
+    let shakaError;
+    if (errorData) {
+      shakaError = new shaka.util.Error(
+          shaka.util.Error.Severity.CRITICAL, shaka.util.Error.Category.TEXT,
+          code, errorData);
+    } else {
+      shakaError = new shaka.util.Error(
+          shaka.util.Error.Severity.CRITICAL, shaka.util.Error.Category.TEXT,
+          code);
+    }
+    const error = shaka.test.Util.jasmineError(shakaError);
     const data = shaka.util.StringUtils.toUTF8(text);
     expect(() => {
       new shaka.text.TtmlTextParser().parseMedia(

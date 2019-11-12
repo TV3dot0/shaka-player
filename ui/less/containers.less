@@ -92,25 +92,17 @@
   /* Centers children horizontally. */
   align-items: center;
 
-  /* A black gradient at the bottom, behind the controls, but only so high. */
-  background: linear-gradient(to top, rgba(0, 0, 0, 1) 0, @transparent 92px);
-
   /* By default, do not allow any of our controls to shrink.
    * Specific controls can use .shrinkable() to override. */
   * { .unshrinkable(); }
-
-  /* Transparent unless explicitly made opaque through "shown=true" attribute */
-  opacity: 0;
-
-  /* When we show/hide this, do it gradually using cubic-bezier timing. */
-  transition: opacity cubic-bezier(0.4, 0, 0.6, 1) 600ms;
 
   /* Position the controls container in front of the text container, so that
    * the text container doesn't interfere with the control buttons. */
   z-index: 1;
 
-  &[shown="true"] {
-    opacity: 1;
+  /* Opacity transition for controls. */
+  & > .shaka-fade-out-on-mouse-out {
+    .opacity-transition();
   }
 
   /* Always show controls while casting. */
@@ -127,9 +119,8 @@
 /* Container for controls positioned at the bottom of the video container:
  * controls button panel and the seek bar. */
 .shaka-bottom-controls {
-  width: 98%;
+  width: @bottom-controls-width;
   padding: 0;
-  padding-left: 2%;
   padding-bottom: 2.5%;
 
   /* Position the bottom panel in front of other controls (play button and
@@ -145,7 +136,6 @@
  * in the middle. */
 .shaka-controls-button-panel {
   /* Fill the space horizontally, with no extra padding or margin. */
-  width: 98.5%;
   padding: 0;
   margin: 0;
 
@@ -172,6 +162,8 @@
   /* Make sure contents cannot be selected. */
   .unselectable();
 
+  .opacity-transition();
+
   /* All buttons, divs, and other controls directly inside this panel should
    * have these characteristics by default. */
   & > * {
@@ -182,7 +174,8 @@
     height: 32px;
 
     /* Consistent margins (external) and padding (internal) between controls. */
-    margin: 1px 6px;
+    .bottom-panels-elements-margin();
+
     padding: 0;
 
     /* Transparent backgrounds, no borders, and a pointer when you mouse over
@@ -193,7 +186,7 @@
   }
 }
 
-/* The container for the giant play button and spinner.  Sits above (Y axis) the
+/* The container for the giant play button.  Sits above (Y axis) the
  * other video controls and seek bar, in the middle of the video frame, on top
  * of (Z axis) the video. */
 .shaka-play-button-container {
@@ -208,6 +201,16 @@
   display: flex;
   justify-content: center;
   align-items: center;
+}
+
+.shaka-skim-container {
+  margin: 0;
+  .fill-container();
+  .shrinkable();
+  .absolute-position();
+
+  /* A black gradient at the bottom, behind the controls, but only so high. */
+  background: linear-gradient(to top, rgba(0, 0, 0, 1) 0, @transparent 92px);
 }
 
 .shaka-text-container {
@@ -273,10 +276,4 @@
   /* Add a bit of a white shadow to keep our black spinner visible
   on a black background. */
   filter: drop-shadow(0 0 2px rgba(255, 255, 255, 0.5));
-}
-
-/* Ad container */
-.shaka-ad-container {
-  .absolute-position();
-  .fill-container();
 }

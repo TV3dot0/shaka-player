@@ -35,6 +35,16 @@
   height: 100%;
 }
 
+.bottom-align-children() {
+  display: flex;
+  justify-content: flex-end;
+  flex-direction: column;
+}
+
+.bottom-panels-elements-margin() {
+  margin: 1px 6px;
+}
+
 /* For containers which host elements overlaying other things. */
 .overlay-parent() {
   /* For a detailed explanation of how this achieves an overlay, please refer
@@ -99,3 +109,20 @@
 .shrinkable() {
   flex-shrink: 1;
 }
+
+.opacity-transition() {
+  /* Transparent unless explicitly made opaque through
+   "shown=true" attribute */
+  opacity: 0;
+
+  /* When we show/hide this, do it gradually using cubic-bezier timing. */
+  transition: opacity cubic-bezier(0.4, 0, 0.6, 1) 600ms;
+
+  &[shown="true"] {
+    opacity: 1;
+  }
+}
+
+/* The width of the bottom-section controls: seek bar, ad controls, and
+the control buttons panel. */
+@bottom-controls-width: 96%;

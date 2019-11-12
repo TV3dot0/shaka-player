@@ -36,6 +36,8 @@ shaka.ui.PlayButton = class extends shaka.ui.Element {
   constructor(parent, controls) {
     super(parent, controls);
 
+    const AdManager = shaka.ads.AdManager;
+
     /** @protected {!HTMLElement} */
     this.button = shaka.util.Dom.createHTMLElement('button');
     this.parent.appendChild(this.button);
@@ -52,17 +54,34 @@ shaka.ui.PlayButton = class extends shaka.ui.Element {
 
     this.eventManager.listen(this.video, 'play', () => {
       this.updateAriaLabel();
+      this.updateIcon();
     });
 
     this.eventManager.listen(this.video, 'pause', () => {
       this.updateAriaLabel();
+      this.updateIcon();
+    });
+
+    this.eventManager.listen(this.adManager, AdManager.AD_PAUSED, () => {
+      this.updateAriaLabel();
+      this.updateIcon();
+    });
+
+    this.eventManager.listen(this.adManager, AdManager.AD_RESUMED, () => {
+      this.updateAriaLabel();
+      this.updateIcon();
+    });
+
+    this.eventManager.listen(this.adManager, AdManager.AD_STARTED, () => {
+      this.updateAriaLabel();
+      this.updateIcon();
     });
 
     this.eventManager.listen(this.button, 'click', () => {
-      if (this.isPaused()) {
-        this.video.play();
+      if (this.ad) {
+        this.controls.playPauseAd();
       } else {
-        this.video.pause();
+        this.controls.playPausePresentation();
       }
     });
   }
@@ -72,9 +91,7 @@ shaka.ui.PlayButton = class extends shaka.ui.Element {
    * @protected
    */
   isPaused() {
-    // The video element is in a paused state while seeking, but we don't count
-    // that.
-    return this.video.paused && !this.controls.isSeeking();
+    return this.controls.presentationIsPaused();
   }
 
   /** @protected */
@@ -85,4 +102,10 @@ shaka.ui.PlayButton = class extends shaka.ui.Element {
     this.button.setAttribute(shaka.ui.Constants.ARIA_LABEL,
         this.localization.resolve(label));
   }
+
+  /**
+   * Called when the button's icon needs to change.
+   * To be overridden by subclasses.
+   */
+  updateIcon() {}
 };

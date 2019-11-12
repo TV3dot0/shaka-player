@@ -19,6 +19,14 @@
 
 @play-button-size-percentage: 15%;
 
+.disabled-button() {
+  /* Set the background and the color, otherwise it might be overwritten by
+   * the css styles in demo. */
+  background-color: transparent;
+  color: white;
+  cursor: default;
+}
+
 /* The giant play button, which sits inside .shaka-player-button-container. */
 .shaka-play-button {
   /* Set width & height in a round-about way.  By using padding, we can keep
@@ -56,6 +64,8 @@
   /* A background color behind the play arrow. */
   background-color: rgba(255, 255, 255, 0.9);
 
+  .opacity-transition();
+
   /* Actual icon images for the two states this could be in.
    * These will be inlined as data URIs when compiled, and so do not need to be
    * deployed separately from the compiled CSS.
@@ -83,11 +93,7 @@
   cursor: pointer;
 
   &[disabled] {
-    /* Set the background and the color, otherwise it might be overwritten by
-     * the css styles in demo. */
-    background-color: transparent;
-    color: white;
-    cursor: default;
+    .disabled-button();
   }
 }
 
@@ -117,7 +123,6 @@
 .shaka-controls-container:not(.shaka-keyboard-navigation) {
   button:focus, input:focus {
     outline: none;
-    border: 0;
   }
 }
 
