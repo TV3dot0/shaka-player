@@ -1943,6 +1943,10 @@ shaka.Player.prototype.getMediaElement = function() {};
  */
 shaka.Player.prototype.getNetworkingEngine = function() {};
 /**
+ * @return {?Array} Offline session ids
+ */
+shaka.Player.prototype.getSessionIds = function() {};
+/**
  * Get the uri to the asset that the player has loaded. If the player has not
  * loaded content, this will return |null|.
  * @return {?string}
