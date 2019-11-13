@@ -499,7 +499,8 @@ shaka.extern.AdvancedDrmConfiguration;
  *   advanced: Object.<string, shaka.extern.AdvancedDrmConfiguration>,
  *   initDataTransform:
  *       ((function(!Uint8Array, ?shaka.extern.DrmInfo):!Uint8Array)|undefined),
- *   fairPlayTransform: boolean
+ *   fairPlayTransform: boolean,
+ *   offlineSessionIds: Array.<string>
  * }}
  *
  * @property {shaka.extern.RetryParameters} retryParameters
@@ -534,6 +535,9 @@ shaka.extern.AdvancedDrmConfiguration;
  *   FairPlay examples; if false, don't transform.  Defaults to
  *   <code>true</code>.  Starting in v2.6 this will go away and we will never
  *   provide default license request/response transforms.
+ * @property {Array.<string>} offlineSessionIds
+ *   <i>Optional.</i><br>
+ *   Holds ids of persisted MediaKeySessions.
  *
  * @exportDoc
  */
