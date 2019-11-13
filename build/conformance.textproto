@@ -100,7 +100,7 @@ requirement: {
 requirement: {
   type: BANNED_PROPERTY_CALL
   value: 'Console.prototype.debug'
-  value: 'Console.prototype.log'
+  #value: 'Console.prototype.log'
   value: 'Console.prototype.info'
   value: 'Console.prototype.warn'
   value: 'Console.prototype.error'
