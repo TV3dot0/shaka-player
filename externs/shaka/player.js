@@ -500,7 +500,7 @@ shaka.extern.AdvancedDrmConfiguration;
  *   initDataTransform:
  *       ((function(!Uint8Array, ?shaka.extern.DrmInfo):!Uint8Array)|undefined),
  *   fairPlayTransform: boolean,
- *   offlineSessionIds: Array.<string>
+ *   offlineSessionIds: Array.<string>,
  *   persistedSessions: Object.<string,ArrayBuffer>
  * }}
  *
