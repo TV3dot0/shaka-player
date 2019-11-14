@@ -1947,6 +1947,10 @@ shaka.Player.prototype.getNetworkingEngine = function() {};
  */
 shaka.Player.prototype.getSessionIds = function() {};
 /**
+ * @return {?Map.<string,MediaKeySession>} Persistent sessions
+ */
+shaka.Player.prototype.getPersistentSessions = function() {};
+/**
  * Get the uri to the asset that the player has loaded. If the player has not
  * loaded content, this will return |null|.
  * @return {?string}
