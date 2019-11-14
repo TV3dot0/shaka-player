@@ -501,6 +501,7 @@ shaka.extern.AdvancedDrmConfiguration;
  *       ((function(!Uint8Array, ?shaka.extern.DrmInfo):!Uint8Array)|undefined),
  *   fairPlayTransform: boolean,
  *   offlineSessionIds: Array.<string>
+ *   persistedSessions: Object.<string,ArrayBuffer>
  * }}
  *
  * @property {shaka.extern.RetryParameters} retryParameters
