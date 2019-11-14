@@ -72,6 +72,9 @@
  * @property {!Array.<string>} offlineSessionIds
  *   <i>Defaults to [].</i> <br>
  *   An array of EME sessions to load for offline playback.
+ * @property {!Object.<string,ArrayBuffer>} persistedSessions
+ *   <i>Defaults to {}.</i> <br>
+ *   An map of persisted EME sessionsId and initData.
  * @property {number} minBufferTime
  *   <i>Defaults to 0.</i> <br>
  *   The minimum number of seconds of content that must be buffered before
