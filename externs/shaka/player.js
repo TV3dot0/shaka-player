@@ -538,7 +538,7 @@ shaka.extern.AdvancedDrmConfiguration;
  * @property {Array.<string>} offlineSessionIds
  *   <i>Optional.</i><br>
  *   Holds ids of persisted MediaKeySessions.
- * @property {Map.<string,ArrayBuffer>} persistedSessions
+ * @property {Object.<string,ArrayBuffer>} persistedSessions
  *   <i>Optional.</i><br>
  *   Holds persisted sessions and initData.
  *
