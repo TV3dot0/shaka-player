@@ -6,3 +6,7 @@ package-lock.json
 docs/api/
 coverage/
 .DS_Store
+
+*.iml
+
+.idea/
